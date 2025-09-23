@@ -15,10 +15,10 @@ def processar_mensagem(mensagem):
         raise ValueError("erro")
 
     comando_arquivo = linhas[0].split() 
-    if comando_arquivo[0] != 'IMACRO':
-        raise ValueError("Comando inválido")
-    
-    nome_arquivo = comando_arquivo[1]
+    if len(comando_arquivo) > 3:
+        raise ValueError("erro")
+
+    nome_arquivo = comando_arquivo[0]
     texto_cima = linhas[1]
     texto_baixo = linhas[2]
 
@@ -37,19 +37,23 @@ def main():
         while True: 
             conn, addr = s.accept() # Aceitar uma conexão
 
-            with conn: # Manter a conexão aberta
-                print(f'Conectado por {addr}') 
+            try:
+                with conn: # Manter a conexão aberta
+                    print(f'Conectado por {addr}') 
 
-                dados = conn.recv(1024).decode() # Receber dados do cliente
+                    dados = conn.recv(1024).decode() # Receber dados do cliente
 
-                print(f"Dados recebidos: {dados}")
+                    print(f"Dados recebidos: {dados}")
 
-                nome_arquivo, texto_cima, texto_baixo = processar_mensagem(dados) # Processar a mensagem
-                img = im_generation.generate_image_macro(nome_arquivo, texto_cima, texto_baixo) # Gerar a image macro
-                img_bytes = convert_to_byte_arr(img, 'JPEG') # Converter para bytes
-                conn.sendall(img_bytes) # Enviar a imagem para o cliente
-                
-                print(f"Imagem enviada para {addr}")
+                    nome_arquivo, texto_cima, texto_baixo = processar_mensagem(dados) # Processar a mensagem
+                    img = im_generation.generate_image_macro(nome_arquivo, texto_cima, texto_baixo) # Gerar a image macro
+                    img_bytes = convert_to_byte_arr(img, 'JPEG') # Converter para bytes
+                    conn.sendall(img_bytes) # Enviar a imagem para o cliente
+                    
+                    print(f"Imagem enviada para {addr}")
+
+            except Exception as e: # Manter a conexão aberta mesmo em caso de erro
+                print(f"Erro ao atender {addr}: {e}")
 
 if __name__ == "__main__":
     main()

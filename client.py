@@ -1,28 +1,30 @@
 
 import socket
 import io
+import shlex
 from PIL import Image
 
 def main():
     HOST = '127.0.0.1'  # Endereço IP do servidor
     PORT = 65432        # Porta que o servidor está escutando
 
-    entrada_do_usuario = input("Digite o comando (formato: IMACRO nome_arquivo.jpg 'texto superior' 'texto inferior'): ")
+
+    entrada_do_usuario = input("Digite o 'nome_arquivo.jpg' 'texto superior' 'texto inferior': ")
     
     # Divide a string em uma lista de argumentos
-    argumentos = entrada_do_usuario.split(" ")
+    argumentos = shlex.split(entrada_do_usuario)
 
     # Verifica se o número de argumentos é o esperado
-    if len(argumentos) < 4:
+    if len(argumentos) < 3:
         print("Erro: Número inválido de argumentos.")
-        print("Uso: IMACRO nome_arquivo.jpg 'texto superior' 'texto inferior'")
+        print("Uso: nome_arquivo.jpg 'texto superior' 'texto inferior'")
         return
 
     # Extrai os argumentos para variáveis
-    comando, arquivo_imagem, texto_superior, texto_inferior = argumentos[0], argumentos[1], argumentos[2], argumentos[3]
+    arquivo_imagem, texto_superior, texto_inferior = argumentos[0], argumentos[1], argumentos[2]
     
     # Constrói a mensagem a ser enviada
-    mensagem = f'{comando} {arquivo_imagem}\n{texto_superior}\n{texto_inferior}\n'
+    mensagem = f'{arquivo_imagem}\n{texto_superior}\n{texto_inferior}\n'
     print(f'Enviando mensagem:\n{mensagem}')
 
     # Conexão com o servidor
@@ -58,7 +60,9 @@ def main():
             print("Certifique-se de que o servidor está em execução.")
         except Exception as e:
             print(f"Ocorreu um erro: {e}")
+            print(' ')
 
 if __name__ == "__main__":
     main()
+
 
