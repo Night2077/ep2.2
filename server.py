@@ -3,15 +3,26 @@ import socket
 from pdb import main
 from imgen import im_generation
 
-NOME_DA_IMAGEM = 'img.jpg'
-TEXTO_CIMA = 'Persona 6'
-TEXTO_BAIXO = 'Nunca Sai'
-
 
 def convert_to_byte_arr(image, format):
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format=format)
     return img_byte_arr.getvalue()
+
+def processar_mensagem(mensagem):
+    linhas = mensagem.strip().split('\n')
+    if len(linhas) < 3:
+        raise ValueError("erro")
+
+    comando_arquivo = linhas[0].split() 
+    if comando_arquivo[0] != 'IMACRO':
+        raise ValueError("Comando inválido")
+    
+    nome_arquivo = comando_arquivo[1]
+    texto_cima = linhas[1]
+    texto_baixo = linhas[2]
+
+    return nome_arquivo, texto_cima, texto_baixo
 
 def main():
 
@@ -28,8 +39,13 @@ def main():
 
             with conn: # Manter a conexão aberta
                 print(f'Conectado por {addr}') 
-                
-                img = im_generation.generate_image_macro(NOME_DA_IMAGEM, TEXTO_CIMA, TEXTO_BAIXO) # Gerar a image macro
+
+                dados = conn.recv(1024).decode() # Receber dados do cliente
+
+                print(f"Dados recebidos: {dados}")
+
+                nome_arquivo, texto_cima, texto_baixo = processar_mensagem(dados) # Processar a mensagem
+                img = im_generation.generate_image_macro(nome_arquivo, texto_cima, texto_baixo) # Gerar a image macro
                 img_bytes = convert_to_byte_arr(img, 'JPEG') # Converter para bytes
                 conn.sendall(img_bytes) # Enviar a imagem para o cliente
                 
