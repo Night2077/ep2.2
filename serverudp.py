@@ -35,6 +35,7 @@ def main():
         sock.bind((HOST, PORT))
         print(f"Servidor UDP ouvindo na porta {PORT}")
 
+        
         while True:
             data, addr = sock.recvfrom(1024)
 
@@ -46,23 +47,26 @@ def main():
                 img = im_generation.generate_image_macro(nome_arquivo, texto_cima, texto_baixo)
                 img_bytes = convert_to_byte_arr(img, 'JPEG')
 
-                segmentos = segmentar_dados(img_bytes, SEG_SIZE)
-                total = len(segmentos)
+                segmentos = segmentar_dados(img_bytes, SEG_SIZE) 
+                seg_count = len(segmentos) 
 
-                # Envia cada segmento com cabeçalho "i/total|"
-                for i, segmento in enumerate(segmentos):
-                    header = f"{i}/{total}|".encode()
-                    sock.sendto(header + segmento, addr)
-                    print(f"Enviado segmento {i+1}/{total} ({len(segmento)} bytes)")
+                # Envia primeiro o número total de segmentos
+                seg_count_bytes = seg_count.to_bytes(2, byteorder='big')
+                sock.sendto(seg_count_bytes, addr)
+                print(f"Enviado número total de segmentos: {seg_count}")
 
-                # Envia pacote de fim
-                sock.sendto(b"END", addr)
-                print(f"Imagem enviada para {addr} em {total} segmentos")
+                for i, segmento in enumerate(segmentos): # envia cada segmento
+                    header = i.to_bytes(2, byteorder='big')  
+                    sock.sendto(header + segmento, addr) # envia índice + dados
+                    print(f"Enviado segmento {i+1}/{seg_count} ({len(segmento)} bytes)")
 
-            except Exception as e:
+                print(f"Imagem enviada para {addr} em {seg_count} segmentos")
+
+            except Exception as e: 
                 print(f"Erro ao atender {addr}: {e}")
                 erro_msg = f"ERRO: {e}"
                 sock.sendto(erro_msg.encode(), addr)
+
 
 if __name__ == "__main__":
     main()

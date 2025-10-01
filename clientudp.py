@@ -24,33 +24,34 @@ def main():
         sock.sendto(mensagem.encode(), (HOST, PORT))
         print("Mensagem enviada. Aguardando resposta...")
 
-        partes = {}
-        total = None
+        try:
+            data, _ = sock.recvfrom(2)
+        except socket.timeout:
+                print("Timeout: Nenhuma resposta do servidor")
+                return
+        total_segmentos = int.from_bytes(data, byteorder='big')
+        print(f"Total de segmentos a receber: {total_segmentos}")
+        
+        #iniciar buffer de recebimento
+        buffer = [None] * total_segmentos
+        recebidos = 0 
 
-        while True:
+        while recebidos < total_segmentos:
             try:
-                data, addr = sock.recvfrom(2048)
+                data, _ = sock.recvfrom(2048)
+                idx = int.from_bytes(data[:2], byteorder='big')
+                payload = data[2:]
 
-                if data.startswith(b"ERRO:"):
-                    print(data.decode())
-                    return
-
-                if data.startswith(b"END"):
-                    print("Fim da transmissão recebido")
-                    break
-
-                # Processa cabeçalho
-                header, payload = data.split(b"|", 1)
-                idx, total = map(int, header.decode().split("/"))
-                partes[idx] = payload
-                print(f"Recebido segmento {idx+1}/{total} ({len(payload)} bytes)")
-
+                if buffer[idx] is None:
+                    buffer[idx] = payload
+                    recebidos += 1
+                    print(f"Recebido segmento {idx+1}/{total_segmentos} ({len(payload)} bytes)")
             except socket.timeout:
                 print("Timeout: transmissão incompleta")
                 break
-
-        if total is not None and len(partes) == total:
-            dados_imagem = b"".join(partes[i] for i in range(total))
+            
+        if recebidos == total_segmentos:
+            dados_imagem = b"".join(buffer)
             try:
                 img = Image.open(io.BytesIO(dados_imagem))
                 img.show()
@@ -61,8 +62,11 @@ def main():
                 with open("debug_data.bin", "wb") as f:
                     f.write(dados_imagem)
                 print("Dados brutos salvos em debug_data.bin")
-        else:
+        else:   
             print("Imagem incompleta ou não recebida")
+
+
 
 if __name__ == "__main__":
     main()
+        
